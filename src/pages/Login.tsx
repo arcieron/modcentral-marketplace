@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
@@ -17,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { cn } from '@/lib/utils';
 
 const Login = () => {
   const [userType, setUserType] = useState<'customer' | 'vendor'>('customer');
@@ -27,7 +27,6 @@ const Login = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Validate form
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -45,7 +44,6 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -55,13 +53,9 @@ const Login = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
     setTimeout(() => {
       console.log('Login submitted:', { userType, email, password, rememberMe });
       
-      // In a real app, you would authenticate with a backend here
-      
-      // For demo purposes, redirect to home page or vendor dashboard
       if (userType === 'vendor') {
         window.location.href = '/vendor-dashboard';
       } else {
