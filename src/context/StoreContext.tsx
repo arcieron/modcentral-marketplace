@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem } from '@/types';
+import { Product, CartItem, User, Order, Payout } from '@/types';
 import { toast } from "sonner";
 
 // Sample product data
@@ -16,7 +15,8 @@ const sampleProducts: Product[] = [
     vendorName: "TurboTech Performance",
     rating: 4.8,
     stock: 15,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "2",
@@ -29,7 +29,8 @@ const sampleProducts: Product[] = [
     vendorName: "Carbon Creations",
     rating: 4.7,
     stock: 8,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "3",
@@ -42,7 +43,8 @@ const sampleProducts: Product[] = [
     vendorName: "Bright Mods",
     rating: 4.9,
     stock: 22,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "4",
@@ -55,7 +57,8 @@ const sampleProducts: Product[] = [
     vendorName: "TurboTech Performance",
     rating: 4.6,
     stock: 10,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "5",
@@ -68,7 +71,8 @@ const sampleProducts: Product[] = [
     vendorName: "Interior Innovations",
     rating: 4.5,
     stock: 12,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "6",
@@ -81,7 +85,8 @@ const sampleProducts: Product[] = [
     vendorName: "TurboTech Performance",
     rating: 4.4,
     stock: 30,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "7",
@@ -94,7 +99,8 @@ const sampleProducts: Product[] = [
     vendorName: "Air Force Mods",
     rating: 4.7,
     stock: 18,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    status: "approved"
   },
   {
     id: "8",
@@ -107,6 +113,65 @@ const sampleProducts: Product[] = [
     vendorName: "Wheel Masters",
     rating: 4.9,
     stock: 6,
+    createdAt: new Date().toISOString(),
+    status: "approved"
+  }
+];
+
+// Sample users data
+const sampleUsers: User[] = [
+  {
+    id: "u1",
+    name: "John Admin",
+    email: "admin@modcentral.com",
+    role: "admin",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "u2",
+    name: "Jane Vendor",
+    email: "vendor@example.com",
+    role: "vendor",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "u3",
+    name: "Bob Customer",
+    email: "customer@example.com",
+    role: "customer",
+    createdAt: new Date().toISOString()
+  }
+];
+
+// Sample orders data
+const sampleOrders: Order[] = [
+  {
+    id: "o1",
+    customerId: "u3",
+    customerName: "Bob Customer",
+    items: [{ ...sampleProducts[0], quantity: 1 }],
+    total: 549.99,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    shippingAddress: {
+      street: "123 Main St",
+      city: "Anytown",
+      state: "CA",
+      zipCode: "12345",
+      country: "USA"
+    },
+    paymentMethod: "Credit Card"
+  }
+];
+
+// Sample payouts data
+const samplePayouts: Payout[] = [
+  {
+    id: "p1",
+    vendorId: "v1",
+    vendorName: "TurboTech Performance",
+    amount: 450.00,
+    status: "pending",
     createdAt: new Date().toISOString()
   }
 ];
@@ -116,6 +181,9 @@ interface StoreContextType {
   products: Product[];
   categories: string[];
   cartItems: CartItem[];
+  users: User[];
+  orders: Order[];
+  payouts: Payout[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -123,6 +191,17 @@ interface StoreContextType {
   getProduct: (id: string) => Product | undefined;
   getVendorProducts: (vendorId: string) => Product[];
   searchProducts: (query: string, category?: string) => Product[];
+  submitProduct: (product: Omit<Product, 'id' | 'createdAt' | 'status'>) => void;
+  approveProduct: (productId: string) => void;
+  rejectProduct: (productId: string) => void;
+  getUser: (id: string) => User | undefined;
+  getUserByEmail: (email: string) => User | undefined;
+  createOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  createPayout: (payout: Omit<Payout, 'id' | 'createdAt'>) => void;
+  updatePayoutStatus: (payoutId: string, status: Payout['status']) => void;
+  getPendingProducts: () => Product[];
+  getPendingPayouts: () => Payout[];
 }
 
 // Create the context
@@ -130,8 +209,11 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 // Create a provider component
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products] = useState<Product[]>(sampleProducts);
+  const [products, setProducts] = useState<Product[]>(sampleProducts);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [users] = useState<User[]>(sampleUsers);
+  const [orders, setOrders] = useState<Order[]>(sampleOrders);
+  const [payouts, setPayouts] = useState<Payout[]>(samplePayouts);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -155,6 +237,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Add to cart
   const addToCart = (product: Product) => {
+    if (product.status !== 'approved') {
+      toast.error("This product is not available for purchase");
+      return;
+    }
+
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
       
@@ -215,7 +302,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Search products
   const searchProducts = (query: string, category?: string) => {
-    let filteredProducts = products;
+    let filteredProducts = products.filter(product => product.status === 'approved');
     
     // Filter by category if specified
     if (category && category !== 'all') {
@@ -234,11 +321,119 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return filteredProducts;
   };
 
+  // Submit a new product (for vendors)
+  const submitProduct = (product: Omit<Product, 'id' | 'createdAt' | 'status'>) => {
+    const newProduct: Product = {
+      ...product,
+      id: `${products.length + 1}`,
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+    
+    setProducts(prevProducts => [...prevProducts, newProduct]);
+    toast.success("Product submitted for review");
+  };
+
+  // Approve a product (for admins)
+  const approveProduct = (productId: string) => {
+    setProducts(prevProducts => 
+      prevProducts.map(product => 
+        product.id === productId 
+          ? { ...product, status: 'approved' } 
+          : product
+      )
+    );
+    toast.success("Product approved");
+  };
+
+  // Reject a product (for admins)
+  const rejectProduct = (productId: string) => {
+    setProducts(prevProducts => 
+      prevProducts.map(product => 
+        product.id === productId 
+          ? { ...product, status: 'rejected' } 
+          : product
+      )
+    );
+    toast.success("Product rejected");
+  };
+
+  // Get a single user by ID
+  const getUser = (id: string) => {
+    return users.find(user => user.id === id);
+  };
+
+  // Get a single user by email
+  const getUserByEmail = (email: string) => {
+    return users.find(user => user.email === email);
+  };
+
+  // Create a new order
+  const createOrder = (order: Omit<Order, 'id' | 'createdAt'>) => {
+    const newOrder: Order = {
+      ...order,
+      id: `o${orders.length + 1}`,
+      createdAt: new Date().toISOString()
+    };
+    
+    setOrders(prevOrders => [...prevOrders, newOrder]);
+    toast.success("Order created successfully");
+  };
+
+  // Update order status
+  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status } 
+          : order
+      )
+    );
+    toast.success(`Order status updated to ${status}`);
+  };
+
+  // Create a new payout
+  const createPayout = (payout: Omit<Payout, 'id' | 'createdAt'>) => {
+    const newPayout: Payout = {
+      ...payout,
+      id: `p${payouts.length + 1}`,
+      createdAt: new Date().toISOString()
+    };
+    
+    setPayouts(prevPayouts => [...prevPayouts, newPayout]);
+    toast.success("Payout created successfully");
+  };
+
+  // Update payout status
+  const updatePayoutStatus = (payoutId: string, status: Payout['status']) => {
+    setPayouts(prevPayouts => 
+      prevPayouts.map(payout => 
+        payout.id === payoutId 
+          ? { ...payout, status } 
+          : payout
+      )
+    );
+    toast.success(`Payout status updated to ${status}`);
+  };
+
+  // Get all pending products
+  const getPendingProducts = () => {
+    return products.filter(product => product.status === 'pending');
+  };
+
+  // Get all pending payouts
+  const getPendingPayouts = () => {
+    return payouts.filter(payout => payout.status === 'pending');
+  };
+
   return (
     <StoreContext.Provider value={{
       products,
       categories,
       cartItems,
+      users,
+      orders,
+      payouts,
       addToCart,
       removeFromCart,
       updateQuantity,
@@ -246,6 +441,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       getProduct,
       getVendorProducts,
       searchProducts,
+      submitProduct,
+      approveProduct,
+      rejectProduct,
+      getUser,
+      getUserByEmail,
+      createOrder,
+      updateOrderStatus,
+      createPayout,
+      updatePayoutStatus,
+      getPendingProducts,
+      getPendingPayouts
     }}>
       {children}
     </StoreContext.Provider>
