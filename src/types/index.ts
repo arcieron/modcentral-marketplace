@@ -24,6 +24,8 @@ export interface User {
   name: string;
   role: 'customer' | 'vendor' | 'admin';
   createdAt: string;
+  stripeConnectId?: string; // Add Stripe Connect ID for vendors
+  stripeConnectStatus?: 'pending' | 'active' | 'rejected';
 }
 
 export interface Order {
@@ -52,5 +54,30 @@ export interface Payout {
   vendorName: string;
   amount: number;
   status: 'pending' | 'processed' | 'failed';
+  createdAt: string;
+  stripeTransferId?: string;
+  failureReason?: string;
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+// New interfaces for vendor payout management
+export interface VendorEarnings {
+  vendorId: string;
+  totalEarnings: number;
+  availableForPayout: number;
+  pendingEarnings: number; // From orders not yet completed
+  lastPayoutDate: string | null;
+  lastPayoutAmount: number | null;
+}
+
+export interface StripeConnectAccount {
+  id: string;
+  vendorId: string;
+  isActive: boolean;
+  country: string;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  defaultCurrency: string;
   createdAt: string;
 }

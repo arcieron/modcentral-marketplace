@@ -1,7 +1,22 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Package, Users, CreditCard, AlertTriangle, CheckCircle, XCircle, ChevronRight, EyeIcon, DollarSign } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Package, 
+  Users, 
+  CreditCard, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  ChevronRight, 
+  EyeIcon, 
+  DollarSign,
+  Calendar,
+  FileText,
+  Settings,
+  Search
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,7 +30,9 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useStore } from '@/context/StoreContext';
@@ -34,13 +51,31 @@ const AdminDashboard = () => {
     updateOrderStatus, 
     updatePayoutStatus,
     getPendingProducts,
-    getPendingPayouts
+    getPendingPayouts,
+    createPayout
   } = useStore();
   
   const [pendingProducts, setPendingProducts] = useState<Product[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<Payout[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  
+  // New state variables for enhanced payout management
+  const [isPayoutDialogOpen, setIsPayoutDialogOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<User | null>(null);
+  const [payoutAmount, setPayoutAmount] = useState<string>("");
+  const [payoutNote, setPayoutNote] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  
+  // Dashboard summary data
+  const [dashboardSummary, setDashboardSummary] = useState({
+    totalRevenue: 0,
+    pendingOrders: 0,
+    activeVendors: 0,
+    pendingProducts: 0,
+    pendingPayouts: 0
+  });
   
   useEffect(() => {
     // Check if admin is logged in
@@ -59,7 +94,23 @@ const AdminDashboard = () => {
     // Load pending products and payouts
     setPendingProducts(getPendingProducts());
     setPendingPayouts(getPendingPayouts());
-  }, [navigate, getPendingProducts, getPendingPayouts]);
+    
+    // Calculate dashboard summary data
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const pendingOrdersCount = orders.filter(order => order.status === 'pending').length;
+    const activeVendorsCount = users.filter(user => user.role === 'vendor').length;
+    const pendingProductsCount = getPendingProducts().length;
+    const pendingPayoutsCount = getPendingPayouts().length;
+    
+    setDashboardSummary({
+      totalRevenue,
+      pendingOrders: pendingOrdersCount,
+      activeVendors: activeVendorsCount,
+      pendingProducts: pendingProductsCount,
+      pendingPayouts: pendingPayoutsCount
+    });
+    
+  }, [navigate, getPendingProducts, getPendingPayouts, orders, users]);
   
   const handleApproveProduct = (product: Product) => {
     approveProduct(product.id);
@@ -79,6 +130,37 @@ const AdminDashboard = () => {
     updatePayoutStatus(payout.id, 'processed');
     setPendingPayouts(prevPayouts => prevPayouts.filter(p => p.id !== payout.id));
     toast.success(`Payout of $${payout.amount.toFixed(2)} to ${payout.vendorName} has been processed`);
+  };
+  
+  // New function to handle creating a manual payout for a vendor
+  const handleCreatePayout = () => {
+    if (!selectedVendor) return;
+    
+    if (!payoutAmount || isNaN(parseFloat(payoutAmount)) || parseFloat(payoutAmount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    const amount = parseFloat(payoutAmount);
+    
+    const newPayout = {
+      vendorId: selectedVendor.id,
+      vendorName: selectedVendor.name,
+      amount,
+      status: 'pending' as const,
+      periodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      periodEnd: new Date().toISOString()
+    };
+    
+    createPayout(newPayout);
+    toast.success(`Created new payout of $${amount.toFixed(2)} for ${selectedVendor.name}`);
+    setIsPayoutDialogOpen(false);
+    setPendingPayouts(prev => [...prev, { ...newPayout, id: `p${payouts.length + 1}`, createdAt: new Date().toISOString() }]);
+    
+    // Reset form
+    setPayoutAmount("");
+    setPayoutNote("");
+    setSelectedVendor(null);
   };
   
   const getStatusBadge = (status: string) => {
@@ -103,6 +185,20 @@ const AdminDashboard = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
+  
+  // Filter products based on search term and status
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = searchTerm === "" || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.vendorName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = filterStatus === "all" || product.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+  
+  // Filter vendors (for the vendor management tab)
+  const vendors = users.filter(user => user.role === 'vendor');
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
@@ -111,56 +207,88 @@ const AdminDashboard = () => {
       <main className="flex-1 pt-24 pb-12">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold font-display tracking-tight">Admin Dashboard</h1>
-              <p className="text-zinc-400 mt-2">Manage all aspects of your marketplace</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold font-display tracking-tight">Admin Dashboard</h1>
+                <p className="text-zinc-400 mt-2">Manage all aspects of your marketplace</p>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+                  <Input
+                    type="search"
+                    placeholder="Search..."
+                    className="bg-zinc-900 border-zinc-800 text-white pl-9 w-[200px] lg:w-[300px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                
+                <Button variant="outline" className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-zinc-400">Total Users</CardTitle>
+                  <CardTitle className="text-sm font-medium text-zinc-400">Total Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{users.length}</div>
-                    <Users className="h-8 w-8 text-zinc-500" />
+                    <div className="text-2xl font-bold">${dashboardSummary.totalRevenue.toFixed(2)}</div>
+                    <DollarSign className="h-8 w-8 text-green-500" />
                   </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-zinc-400">Total Products</CardTitle>
+                  <CardTitle className="text-sm font-medium text-zinc-400">Active Vendors</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{products.length}</div>
-                    <Package className="h-8 w-8 text-zinc-500" />
+                    <div className="text-2xl font-bold">{dashboardSummary.activeVendors}</div>
+                    <Users className="h-8 w-8 text-blue-500" />
                   </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-zinc-400">Total Orders</CardTitle>
+                  <CardTitle className="text-sm font-medium text-zinc-400">Pending Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{orders.length}</div>
-                    <CreditCard className="h-8 w-8 text-zinc-500" />
+                    <div className="text-2xl font-bold">{dashboardSummary.pendingOrders}</div>
+                    <Package className="h-8 w-8 text-orange-500" />
                   </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-zinc-900 border-zinc-800 text-white">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-zinc-400">Pending Approvals</CardTitle>
+                  <CardTitle className="text-sm font-medium text-zinc-400">Pending Products</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{pendingProducts.length}</div>
+                    <div className="text-2xl font-bold">{dashboardSummary.pendingProducts}</div>
                     <AlertTriangle className="h-8 w-8 text-yellow-500" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-zinc-900 border-zinc-800 text-white">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-zinc-400">Pending Payouts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold">{dashboardSummary.pendingPayouts}</div>
+                    <CreditCard className="h-8 w-8 text-purple-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -177,11 +305,17 @@ const AdminDashboard = () => {
                 <TabsTrigger value="users" className="data-[state=active]:bg-blue-600">
                   Users
                 </TabsTrigger>
+                <TabsTrigger value="vendors" className="data-[state=active]:bg-blue-600">
+                  Vendors
+                </TabsTrigger>
                 <TabsTrigger value="orders" className="data-[state=active]:bg-blue-600">
                   Orders
                 </TabsTrigger>
                 <TabsTrigger value="payouts" className="data-[state=active]:bg-blue-600">
                   Payouts
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600">
+                  Reports
                 </TabsTrigger>
               </TabsList>
               
@@ -241,10 +375,27 @@ const AdminDashboard = () => {
               <TabsContent value="all-products">
                 <Card className="bg-zinc-900 border-zinc-800 text-white">
                   <CardHeader>
-                    <CardTitle>All Products</CardTitle>
-                    <CardDescription className="text-zinc-400">
-                      Manage all products in the marketplace
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>All Products</CardTitle>
+                        <CardDescription className="text-zinc-400">
+                          Manage all products in the marketplace
+                        </CardDescription>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <select
+                          className="bg-zinc-800 border border-zinc-700 text-white rounded px-3 py-1 text-sm"
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="all">All Status</option>
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -258,7 +409,7 @@ const AdminDashboard = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {products.map(product => (
+                        {filteredProducts.map(product => (
                           <TableRow key={product.id} className="border-zinc-800 hover:bg-zinc-800/50">
                             <TableCell className="font-medium">{product.name}</TableCell>
                             <TableCell>{product.vendorName}</TableCell>
@@ -316,6 +467,96 @@ const AdminDashboard = () => {
                 </Card>
               </TabsContent>
               
+              <TabsContent value="vendors">
+                <Card className="bg-zinc-900 border-zinc-800 text-white">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Vendor Management</CardTitle>
+                        <CardDescription className="text-zinc-400">
+                          Manage vendors and their payouts
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (vendors.length > 0) {
+                            setSelectedVendor(vendors[0]);
+                            setIsPayoutDialogOpen(true);
+                          } else {
+                            toast.error("No vendors available");
+                          }
+                        }}
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Create Payout
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
+                          <TableHead>Vendor Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Products</TableHead>
+                          <TableHead>Stripe Connected</TableHead>
+                          <TableHead>Date Joined</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vendors.map(vendor => {
+                          const vendorProducts = products.filter(p => p.vendorId === vendor.id);
+                          const isStripeConnected = vendor.stripeConnectId ? true : false;
+                          
+                          return (
+                            <TableRow key={vendor.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                              <TableCell className="font-medium">{vendor.name}</TableCell>
+                              <TableCell>{vendor.email}</TableCell>
+                              <TableCell>{vendorProducts.length}</TableCell>
+                              <TableCell>
+                                {isStripeConnected ? (
+                                  <Badge variant="outline" className="bg-green-900/20 text-green-500 border-green-500">
+                                    Connected
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-yellow-900/20 text-yellow-500 border-yellow-500">
+                                    Not Connected
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>{formatDate(vendor.createdAt)}</TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800 mr-2"
+                                  onClick={() => {
+                                    setSelectedVendor(vendor);
+                                    setIsPayoutDialogOpen(true);
+                                  }}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-1" />
+                                  Payout
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800"
+                                >
+                                  <EyeIcon className="h-4 w-4 mr-1" />
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
               <TabsContent value="orders">
                 <Card className="bg-zinc-900 border-zinc-800 text-white">
                   <CardHeader>
@@ -333,6 +574,7 @@ const AdminDashboard = () => {
                           <TableHead>Total</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -343,6 +585,22 @@ const AdminDashboard = () => {
                             <TableCell>${order.total.toFixed(2)}</TableCell>
                             <TableCell>{getStatusBadge(order.status)}</TableCell>
                             <TableCell>{formatDate(order.createdAt)}</TableCell>
+                            <TableCell className="text-right">
+                              <select 
+                                className="bg-zinc-800 border border-zinc-700 text-white rounded px-2 py-1 text-sm"
+                                value={order.status}
+                                onChange={(e) => {
+                                  updateOrderStatus(order.id, e.target.value as any);
+                                  toast.success(`Order status updated to ${e.target.value}`);
+                                }}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -354,10 +612,27 @@ const AdminDashboard = () => {
               <TabsContent value="payouts">
                 <Card className="bg-zinc-900 border-zinc-800 text-white">
                   <CardHeader>
-                    <CardTitle>Vendor Payouts</CardTitle>
-                    <CardDescription className="text-zinc-400">
-                      Manage payouts to vendors
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Vendor Payouts</CardTitle>
+                        <CardDescription className="text-zinc-400">
+                          Manage payouts to vendors
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (vendors.length > 0) {
+                            setSelectedVendor(vendors[0]);
+                            setIsPayoutDialogOpen(true);
+                          } else {
+                            toast.error("No vendors available");
+                          }
+                        }}
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Create Payout
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -384,6 +659,7 @@ const AdminDashboard = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800"
                                   onClick={() => handleProcessPayout(payout)}
                                 >
                                   <DollarSign className="h-4 w-4 mr-2" />
@@ -395,6 +671,56 @@ const AdminDashboard = () => {
                         ))}
                       </TableBody>
                     </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="reports">
+                <Card className="bg-zinc-900 border-zinc-800 text-white">
+                  <CardHeader>
+                    <CardTitle>Sales Reports</CardTitle>
+                    <CardDescription className="text-zinc-400">
+                      View revenue and vendor performance reports
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="bg-zinc-800 border-zinc-700 text-white">
+                          <CardHeader>
+                            <CardTitle className="text-base">Revenue by Category</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-[300px] flex items-center justify-center border border-dashed border-zinc-700 rounded-md">
+                              <p className="text-zinc-400">Category revenue chart</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-zinc-800 border-zinc-700 text-white">
+                          <CardHeader>
+                            <CardTitle className="text-base">Top Vendors by Sales</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-[300px] flex items-center justify-center border border-dashed border-zinc-700 rounded-md">
+                              <p className="text-zinc-400">Vendor performance chart</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <div className="flex justify-between space-x-4">
+                        <Button variant="outline" className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Generate Monthly Report
+                        </Button>
+                        
+                        <Button variant="outline" className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Select Custom Date Range
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -464,6 +790,75 @@ const AdminDashboard = () => {
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Create Payout Dialog */}
+      <Dialog open={isPayoutDialogOpen} onOpenChange={setIsPayoutDialogOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Create Vendor Payout</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Create a new payout for a vendor
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="vendor">Select Vendor</Label>
+              <select 
+                id="vendor"
+                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded px-3 py-2"
+                value={selectedVendor?.id || ""}
+                onChange={(e) => {
+                  const vendor = vendors.find(v => v.id === e.target.value);
+                  setSelectedVendor(vendor || null);
+                }}
+              >
+                {vendors.map(vendor => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="amount">Payout Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-zinc-400">$</span>
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  placeholder="0.00" 
+                  className="pl-8 bg-zinc-800 border-zinc-700 text-white" 
+                  value={payoutAmount}
+                  onChange={(e) => setPayoutAmount(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="note">Note (Optional)</Label>
+              <Input 
+                id="note" 
+                placeholder="Payment for March sales" 
+                className="bg-zinc-800 border-zinc-700 text-white" 
+                value={payoutNote}
+                onChange={(e) => setPayoutNote(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPayoutDialogOpen(false)} className="bg-transparent text-white border-zinc-700 hover:bg-zinc-800">
+              Cancel
+            </Button>
+            <Button onClick={handleCreatePayout} className="bg-green-600 hover:bg-green-700">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Create Payout
             </Button>
           </DialogFooter>
         </DialogContent>
