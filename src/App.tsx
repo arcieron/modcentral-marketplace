@@ -16,6 +16,9 @@ import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import AddProduct from "./pages/AddProduct";
+import VendorProfile from "./pages/VendorProfile";
+import Chat from "./pages/Chat";
+import Conversations from "./pages/Conversations";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/vendor/:vendorId" element={<VendorProfile />} />
+            <Route path="/chat/:vendorId" element={<Chat />} />
+            <Route path="/messages" element={<Conversations />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

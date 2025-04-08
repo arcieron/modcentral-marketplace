@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useStore } from '@/context/StoreContext';
-import { Filter, Search, ShoppingCart } from 'lucide-react';
+import { Filter, Search, ShoppingCart, Store } from 'lucide-react';
 
 const Shop = () => {
   const { products, categories, searchProducts, addToCart } = useStore();
@@ -118,7 +118,10 @@ const Shop = () => {
                           </h3>
                         </Link>
                         <div className="text-muted-foreground text-sm mb-2">
-                          {product.vendorName}
+                          <Link to={`/vendor/${product.vendorId}`} className="hover:text-primary flex items-center">
+                            <Store className="h-3 w-3 mr-1" />
+                            {product.vendorName}
+                          </Link>
                         </div>
                         <div className="text-xl font-semibold mt-auto mb-4">
                           ${product.price.toFixed(2)}

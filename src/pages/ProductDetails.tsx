@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ShoppingCart, Star, Truck, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, Star, Truck, ShieldCheck, Store, MessageSquare } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
 const ProductDetails = () => {
@@ -90,8 +90,16 @@ const ProductDetails = () => {
                 </span>
               </div>
               
-              <div className="text-sm text-muted-foreground mb-4">
-                Sold by <Link to={`/shop?vendor=${product.vendorId}`} className="text-primary hover:underline">{product.vendorName}</Link>
+              <div className="flex items-center text-sm text-muted-foreground mb-4">
+                <Store className="h-4 w-4 mr-1" />
+                <span>Sold by </span>
+                <Link to={`/vendor/${product.vendorId}`} className="text-primary hover:underline ml-1">
+                  {product.vendorName}
+                </Link>
+                <Link to={`/chat/${product.vendorId}`} className="ml-3 text-xs text-primary hover:underline flex items-center">
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Contact Seller
+                </Link>
               </div>
               
               <div className="text-2xl font-semibold mb-6 text-foreground">${product.price.toFixed(2)}</div>

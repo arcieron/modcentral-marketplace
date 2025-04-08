@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, LogIn, Package, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, User, LogIn, Package, ShieldCheck, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/context/StoreContext';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ const Navbar = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   
   useEffect(() => {
     // Check for user in localStorage
@@ -28,6 +29,14 @@ const Navbar = () => {
     if (storedUser) {
       try {
         setCurrentUser(JSON.parse(storedUser));
+        
+        // In a real app, we would fetch unread messages from the API
+        // This is mock data for demonstration
+        if (JSON.parse(storedUser).role === 'customer') {
+          setUnreadMessages(2);
+        } else if (JSON.parse(storedUser).role === 'vendor') {
+          setUnreadMessages(5);
+        }
       } catch (error) {
         console.error('Error parsing user data', error);
       }
@@ -84,6 +93,19 @@ const Navbar = () => {
               </Button>
             </Link>
             
+            {currentUser && (
+              <Link to="/messages" className="relative">
+                <Button variant="ghost" size="icon" className="text-white">
+                  <MessageSquare className="h-5 w-5" />
+                  {unreadMessages > 0 && (
+                    <Badge variant="primary" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {unreadMessages}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
+            
             {currentUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -123,6 +145,21 @@ const Navbar = () => {
                       </Link>
                     </DropdownMenuItem>
                   )}
+                  
+                  <DropdownMenuItem 
+                    className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
+                    asChild
+                  >
+                    <Link to="/messages" className="flex items-center">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      <span>Messages</span>
+                      {unreadMessages > 0 && (
+                        <Badge variant="primary" className="ml-auto">
+                          {unreadMessages}
+                        </Badge>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
                   
                   <DropdownMenuItem 
                     className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"

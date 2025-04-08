@@ -81,3 +81,21 @@ export interface StripeConnectAccount {
   defaultCurrency: string;
   createdAt: string;
 }
+
+// Chat interfaces
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  content: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  participantIds: string[];
+  lastMessageAt: string;
+  lastMessage?: string;
+}
