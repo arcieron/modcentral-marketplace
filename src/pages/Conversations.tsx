@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -55,7 +54,7 @@ const Conversations = () => {
         participantIds: ['user-123', 'vendor-3'],
         participantName: 'Custom Parts',
         lastMessageAt: new Date(Date.now() - 172800000).toISOString(),
-        lastMessage: 'We'll need about 2-3 business days to create your custom part.',
+        lastMessage: "We'll need about 2-3 business days to create your custom part.",
         unreadCount: 0
       }
     ];
