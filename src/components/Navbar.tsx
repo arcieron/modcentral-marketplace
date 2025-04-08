@@ -98,7 +98,7 @@ const Navbar = () => {
                 <Button variant="ghost" size="icon" className="text-white">
                   <MessageSquare className="h-5 w-5" />
                   {unreadMessages > 0 && (
-                    <Badge variant="primary" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
                       {unreadMessages}
                     </Badge>
                   )}
@@ -154,7 +154,7 @@ const Navbar = () => {
                       <MessageSquare className="mr-2 h-4 w-4" />
                       <span>Messages</span>
                       {unreadMessages > 0 && (
-                        <Badge variant="primary" className="ml-auto">
+                        <Badge variant="default" className="ml-auto">
                           {unreadMessages}
                         </Badge>
                       )}
