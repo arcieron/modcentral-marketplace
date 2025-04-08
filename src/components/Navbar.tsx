@@ -58,24 +58,27 @@ const Navbar = () => {
   };
   
   return (
-    <header className={`fixed w-full top-0 left-0 z-50 bg-black ${isScrolled ? 'shadow-md shadow-blue-900/20' : ''} transition-all duration-300 py-4`}>
+    <header className={`fixed w-full top-0 left-0 z-50 bg-black ${isScrolled ? 'shadow-md shadow-yellow-900/20' : ''} transition-all duration-300 py-4`}>
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link 
             to="/" 
-            className="flex items-center text-2xl font-bold tracking-tighter font-display"
+            className="flex items-center"
           >
-            <span className="text-blue-600">Mod</span>
-            <span className="text-white">Central</span>
+            <img 
+              src="/assets/modcentral-logo.png" 
+              alt="ModCentral Logo" 
+              className="h-10 md:h-12" 
+            />
           </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-base font-medium text-white hover:text-blue-600 transition-colors">
+            <Link to="/" className="text-base font-medium text-white hover:text-yellow-400 transition-colors">
               Home
             </Link>
-            <Link to="/shop" className="text-base font-medium text-white hover:text-blue-600 transition-colors">
+            <Link to="/shop" className="text-base font-medium text-white hover:text-yellow-400 transition-colors">
               Shop
             </Link>
           </nav>
@@ -140,7 +143,7 @@ const Navbar = () => {
                       asChild
                     >
                       <Link to="/vendor-dashboard" className="flex items-center">
-                        <Package className="mr-2 h-4 w-4 text-blue-500" />
+                        <Package className="mr-2 h-4 w-4 text-yellow-400" />
                         <span>Vendor Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
