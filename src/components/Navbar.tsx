@@ -4,6 +4,7 @@ import { ShoppingCart, User, LogIn, Package, ShieldCheck, MessageSquare } from '
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/context/StoreContext';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -13,33 +14,22 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 
 const Navbar = () => {
   const { cartItems } = useStore();
+  const { user, profile, signOut } = useAuth();
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   
   useEffect(() => {
-    // Check for user in localStorage
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-        
-        // In a real app, we would fetch unread messages from the API
-        // This is mock data for demonstration
-        if (JSON.parse(storedUser).role === 'customer') {
-          setUnreadMessages(2);
-        } else if (JSON.parse(storedUser).role === 'vendor') {
-          setUnreadMessages(5);
-        }
-      } catch (error) {
-        console.error('Error parsing user data', error);
-      }
+    // In a real app, we would fetch unread messages from the API
+    // This is mock data for demonstration
+    if (user && profile?.role === 'customer') {
+      setUnreadMessages(2);
+    } else if (user && profile?.role === 'vendor') {
+      setUnreadMessages(5);
     }
     
     const handleScroll = () => {
@@ -49,12 +39,10 @@ const Navbar = () => {
     
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [user, profile]);
   
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    toast.success('Logged out successfully');
+  const handleLogout = async () => {
+    await signOut();
   };
   
   return (
@@ -86,7 +74,7 @@ const Navbar = () => {
               </Button>
             </Link>
             
-            {currentUser && (
+            {user && (
               <Link to="/messages" className="relative">
                 <Button variant="ghost" size="icon" className="text-white">
                   <MessageSquare className="h-5 w-5" />
@@ -99,7 +87,7 @@ const Navbar = () => {
               </Link>
             )}
             
-            {currentUser ? (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full bg-zinc-800 border border-zinc-700">
@@ -109,13 +97,13 @@ const Navbar = () => {
                 <DropdownMenuContent className="w-56 mt-2 bg-zinc-900 border-zinc-800 text-white">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{currentUser.name}</p>
-                      <p className="text-xs leading-none text-zinc-400">{currentUser.email}</p>
+                      <p className="text-sm font-medium leading-none">{profile?.name || user.email}</p>
+                      <p className="text-xs leading-none text-zinc-400">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   
-                  {currentUser.role === 'admin' && (
+                  {profile?.role === 'admin' && (
                     <DropdownMenuItem 
                       className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
                       asChild
@@ -127,7 +115,7 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   )}
                   
-                  {currentUser.role === 'vendor' && (
+                  {profile?.role === 'vendor' && (
                     <DropdownMenuItem 
                       className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
                       asChild
