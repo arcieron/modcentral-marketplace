@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
 import { supabase, getCurrentUser, signIn, signUp, signOut, UserWithProfile } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -30,14 +29,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { user: userData, error } = await getCurrentUser();
           
           if (userData) {
-            setUser(userData as UserWithProfile);
-            setProfile(userData.profile);
+            const userWithProfile = userData as UserWithProfile;
+            setUser(userWithProfile);
+            setProfile(userWithProfile.profile);
             
             // Save to localStorage for Navbar to access (temporary solution)
             localStorage.setItem('currentUser', JSON.stringify({
-              ...userData.profile,
-              id: userData.id,
-              email: userData.email,
+              ...userWithProfile.profile,
+              id: userWithProfile.id,
+              email: userWithProfile.email,
             }));
           }
         } else {
@@ -55,14 +55,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user: userData, error } = await getCurrentUser();
       
       if (userData) {
-        setUser(userData as UserWithProfile);
-        setProfile(userData.profile);
+        const userWithProfile = userData as UserWithProfile;
+        setUser(userWithProfile);
+        setProfile(userWithProfile.profile);
         
         // Save to localStorage for Navbar to access (temporary solution)
         localStorage.setItem('currentUser', JSON.stringify({
-          ...userData.profile,
-          id: userData.id,
-          email: userData.email,
+          ...userWithProfile.profile,
+          id: userWithProfile.id,
+          email: userWithProfile.email,
         }));
       }
       
