@@ -1,11 +1,11 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getCurrentUser, signIn, signUp, signOut } from '@/integrations/supabase/client';
+import { supabase, getCurrentUser, signIn, signUp, signOut, UserWithProfile } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface AuthContextProps {
-  user: User | null;
+  user: UserWithProfile | null;
   profile: any | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -16,7 +16,7 @@ interface AuthContextProps {
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserWithProfile | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { user: userData, error } = await getCurrentUser();
           
           if (userData) {
-            setUser(userData);
+            setUser(userData as UserWithProfile);
             setProfile(userData.profile);
             
             // Save to localStorage for Navbar to access (temporary solution)
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user: userData, error } = await getCurrentUser();
       
       if (userData) {
-        setUser(userData);
+        setUser(userData as UserWithProfile);
         setProfile(userData.profile);
         
         // Save to localStorage for Navbar to access (temporary solution)
