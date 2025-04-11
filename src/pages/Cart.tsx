@@ -140,9 +140,11 @@ const Cart = () => {
                   </CardContent>
                   
                   <CardFooter className="px-6 pb-6 pt-0">
-                    <Button className="w-full">
-                      Proceed to Checkout
-                    </Button>
+                    <Link to="/checkout" className="w-full">
+                      <Button className="w-full">
+                        Proceed to Checkout
+                      </Button>
+                    </Link>
                   </CardFooter>
                 </Card>
               </div>

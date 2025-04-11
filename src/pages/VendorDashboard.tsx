@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,18 +23,38 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { VendorEarnings } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 const VendorDashboard = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { products, getVendorProducts, users } = useStore();
+  const { products, getVendorProducts } = useStore();
+  const { user } = useAuth();
+  
   const [vendorId, setVendorId] = useState<string>("");
   const [vendorName, setVendorName] = useState<string>("");
   const [stripeConnected, setStripeConnected] = useState<boolean>(false);
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // Mock earnings data - would be fetched from backend in real app
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const success = queryParams.get('success');
+    const refresh = queryParams.get('refresh');
+    
+    if (success === 'true') {
+      toast.success('Your Stripe account has been successfully connected!');
+      setStripeConnected(true);
+      navigate('/vendor-dashboard', { replace: true });
+    } else if (refresh === 'true') {
+      toast.info('Stripe onboarding session expired. Please try again.');
+      navigate('/vendor-dashboard', { replace: true });
+    }
+  }, [location, navigate]);
+  
   const [earnings, setEarnings] = useState<VendorEarnings>({
     vendorId: "v1",
     totalEarnings: 5249.97,
@@ -45,7 +64,6 @@ const VendorDashboard = () => {
     lastPayoutAmount: 1408.48
   });
   
-  // Mock payouts history - would be fetched from backend
   const [payoutsHistory, setPayoutsHistory] = useState([
     {
       id: "pout_1",
@@ -63,27 +81,37 @@ const VendorDashboard = () => {
     }
   ]);
   
-  // Get vendor products
   const [vendorProducts, setVendorProducts] = useState<any[]>([]);
   
   useEffect(() => {
-    // Check if vendor is logged in
-    const currentUser = localStorage.getItem('currentUser');
-    if (currentUser) {
-      const user = JSON.parse(currentUser);
-      if (user.role !== 'vendor') {
+    if (user) {
+      if (user.profile?.role !== 'vendor') {
         toast.error('You need to be logged in as a vendor to access this page');
         navigate('/login');
         return;
       }
       
       setVendorId(user.id);
-      setVendorName(user.name);
+      setVendorName(user.profile.name || '');
       
-      // In a real app, this would check if the vendor has a Stripe Connect account
-      setStripeConnected(user.stripeConnectId ? true : false);
+      const checkStripeAccount = async () => {
+        try {
+          const { data: vendorData, error } = await supabase
+            .from('vendors')
+            .select('stripe_connect_id, stripe_connect_status')
+            .eq('user_id', user.id)
+            .single();
+            
+          if (!error && vendorData) {
+            setStripeConnected(vendorData.stripe_connect_status === 'active');
+          }
+        } catch (error) {
+          console.error("Error checking Stripe account:", error);
+        }
+      };
       
-      // Get vendor's products
+      checkStripeAccount();
+      
       const products = getVendorProducts(user.id);
       setVendorProducts(products);
       setIsLoading(false);
@@ -91,24 +119,43 @@ const VendorDashboard = () => {
       toast.error('Please login to continue');
       navigate('/login');
     }
-  }, [navigate, getVendorProducts]);
+  }, [navigate, getVendorProducts, user]);
   
-  // For demo purposes - would be real stripe connect in production
-  const handleConnectStripe = () => {
-    // In a real app this would redirect to Stripe Connect OAuth flow
-    toast.success("This would redirect to Stripe Connect onboarding in a real application");
-    setStripeConnected(true);
+  const handleConnectStripe = async () => {
+    if (!user) {
+      toast.error('Please login to continue');
+      return;
+    }
+    
+    setIsConnecting(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-connect-account');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No onboarding URL returned');
+      }
+    } catch (error) {
+      console.error('Stripe connect error:', error);
+      toast.error('Failed to connect Stripe account. Please try again.');
+    } finally {
+      setIsConnecting(false);
+    }
   };
   
-  // Mock requesting a payout
-  const handleRequestPayout = () => {
+  const handleRequestPayout = async () => {
     if (!stripeConnected) {
       toast.error("You need to connect your Stripe account first");
       return;
     }
     
     toast.success(`Payout of $${earnings.availableForPayout.toFixed(2)} requested successfully`);
-    // In a real app, this would trigger a backend process to create a payout
     setEarnings(prev => ({
       ...prev,
       availableForPayout: 0,
@@ -117,7 +164,6 @@ const VendorDashboard = () => {
     }));
   };
 
-  // Mock statistics
   const stats = {
     totalSales: earnings.totalEarnings,
     orders: 12,
@@ -317,9 +363,13 @@ const VendorDashboard = () => {
                       </AlertDescription>
                     </Alert>
                     
-                    <Button onClick={handleConnectStripe} className="w-full sm:w-auto mt-4">
+                    <Button 
+                      onClick={handleConnectStripe} 
+                      className="w-full sm:w-auto mt-4"
+                      disabled={isConnecting}
+                    >
                       <CreditCard className="mr-2 h-4 w-4" />
-                      Connect Stripe Account
+                      {isConnecting ? 'Connecting...' : 'Connect Stripe Account'}
                     </Button>
                   </CardContent>
                 </Card>
