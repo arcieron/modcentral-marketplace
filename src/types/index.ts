@@ -24,7 +24,7 @@ export interface User {
   name: string;
   role: 'customer' | 'vendor' | 'admin';
   createdAt: string;
-  stripeConnectId?: string; // Add Stripe Connect ID for vendors
+  stripeConnectId?: string; 
   stripeConnectStatus?: 'pending' | 'active' | 'rejected';
 }
 
@@ -80,6 +80,18 @@ export interface StripeConnectAccount {
   payoutsEnabled: boolean;
   defaultCurrency: string;
   createdAt: string;
+}
+
+// Vendor interface for Supabase data
+export interface Vendor {
+  id: string;
+  user_id: string;
+  stripe_connect_id: string | null;
+  stripe_connect_status: 'pending' | 'active' | 'rejected';
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // Chat interfaces

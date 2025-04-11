@@ -97,9 +97,9 @@ const VendorDashboard = () => {
       const checkStripeAccount = async () => {
         try {
           const { data: vendorData, error } = await supabase
-            .from('vendors')
-            .select('stripe_connect_id, stripe_connect_status')
-            .eq('user_id', user.id)
+            .from("vendors")
+            .select("stripe_connect_id, stripe_connect_status")
+            .eq("user_id", user.id)
             .single();
             
           if (!error && vendorData) {
