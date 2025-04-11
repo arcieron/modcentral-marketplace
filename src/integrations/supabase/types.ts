@@ -333,6 +333,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vendors: {
+        Row: {
+          charges_enabled: boolean | null
+          created_at: string | null
+          id: string
+          payouts_enabled: boolean | null
+          stripe_connect_id: string | null
+          stripe_connect_status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          payouts_enabled?: boolean | null
+          stripe_connect_id?: string | null
+          stripe_connect_status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          payouts_enabled?: boolean | null
+          stripe_connect_id?: string | null
+          stripe_connect_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

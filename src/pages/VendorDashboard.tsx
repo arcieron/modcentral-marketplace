@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -25,8 +26,9 @@ import {
 import { useStore } from '@/context/StoreContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { VendorEarnings } from '@/types';
+import { VendorEarnings, Vendor } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { getVendorByUserId, createVendor } from '@/services/VendorService';
 
 const VendorDashboard = () => {
   const location = useLocation();
@@ -39,6 +41,7 @@ const VendorDashboard = () => {
   const [stripeConnected, setStripeConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [vendorData, setVendorData] = useState<Vendor | null>(null);
   
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -96,17 +99,23 @@ const VendorDashboard = () => {
       
       const checkStripeAccount = async () => {
         try {
-          const { data: vendorData, error } = await supabase
-            .from("vendors")
-            .select("stripe_connect_id, stripe_connect_status")
-            .eq("user_id", user.id)
-            .single();
-            
-          if (!error && vendorData) {
-            setStripeConnected(vendorData.stripe_connect_status === 'active');
+          // Use our VendorService instead of direct Supabase call
+          const vendor = await getVendorByUserId(user.id);
+          
+          if (vendor) {
+            setVendorData(vendor);
+            setStripeConnected(vendor.stripe_connect_status === 'active');
+          } else {
+            // Create a vendor record if none exists
+            const newVendor = await createVendor(user.id);
+            if (newVendor) {
+              setVendorData(newVendor);
+            }
           }
         } catch (error) {
           console.error("Error checking Stripe account:", error);
+        } finally {
+          setIsLoading(false);
         }
       };
       
@@ -114,7 +123,6 @@ const VendorDashboard = () => {
       
       const products = getVendorProducts(user.id);
       setVendorProducts(products);
-      setIsLoading(false);
     } else {
       toast.error('Please login to continue');
       navigate('/login');
