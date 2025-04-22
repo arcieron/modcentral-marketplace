@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,8 +12,19 @@ const Shop = () => {
   const { products, categories, searchProducts, addToCart } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filteredProducts, setFilteredProducts] = useState([]);
   
-  const filteredProducts = searchProducts(searchQuery, selectedCategory === 'all' ? undefined : selectedCategory);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const result = await searchProducts(
+        searchQuery, 
+        selectedCategory === 'all' ? undefined : selectedCategory
+      );
+      setFilteredProducts(result);
+    };
+    
+    fetchProducts();
+  }, [searchQuery, selectedCategory, searchProducts]);
   
   const formatCategory = (category: string) => {
     return category
@@ -126,7 +136,7 @@ const Shop = () => {
                         <div className="text-xl font-semibold mt-auto mb-4">
                           ${product.price.toFixed(2)}
                         </div>
-                        <Button 
+                        <Button
                           className="w-full"
                           onClick={(e) => {
                             e.preventDefault();

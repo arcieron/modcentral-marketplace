@@ -71,9 +71,6 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
-[functions]
-# Port to serve the Functions API.
-port = 54328
 
 [functions.create-connect-account]
 verify_jwt = true
