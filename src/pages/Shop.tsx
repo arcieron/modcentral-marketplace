@@ -9,9 +9,8 @@ import { useStore } from '@/context/StoreContext';
 import { Filter, Search, ShoppingCart, Store } from 'lucide-react';
 
 const Shop = () => {
-  const { products, categories, searchProducts, addToCart } = useStore();
+  const { products, categories, searchProducts, addToCart, selectedCategory, setSelectedCategory } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [filteredProducts, setFilteredProducts] = useState([]);
   
   useEffect(() => {

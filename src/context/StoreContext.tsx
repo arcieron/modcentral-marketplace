@@ -30,6 +30,8 @@ interface StoreContextType {
   updatePayoutStatus: (payoutId: string, status: Payout['status']) => Promise<void>;
   getPendingProducts: () => Promise<Product[]>;
   getPendingPayouts: () => Promise<Payout[]>;
+  selectedCategory: string;
+  setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // Helper functions to transform data from Supabase to match our interfaces
@@ -110,6 +112,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [orders, setOrders] = useState<Order[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Fetch initial data from Supabase
   useEffect(() => {
@@ -686,7 +689,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createPayout,
       updatePayoutStatus,
       getPendingProducts,
-      getPendingPayouts
+      getPendingPayouts,
+      selectedCategory,
+      setSelectedCategory
     }}>
       {children}
     </StoreContext.Provider>
