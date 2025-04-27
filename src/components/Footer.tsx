@@ -1,4 +1,4 @@
-
+import Logo from '@/assets/images/logo.png';  
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -8,10 +8,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
             <Link to="/" className="inline-block mb-4">
-              <h2 className="text-2xl font-bold tracking-tighter">
-                <span className="text-primary">Mod</span>
-                <span className="text-foreground">Central</span>
-              </h2>
+              <img 
+                src={Logo} 
+                alt="ModCentral Logo" 
+                className="h-10 md:h-12" 
+              />
             </Link>
             <p className="text-foreground/70 mb-4">
               The premier marketplace for automotive enthusiasts to find the perfect modifications for their vehicles.

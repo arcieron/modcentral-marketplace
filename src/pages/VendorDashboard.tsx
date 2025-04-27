@@ -1,6 +1,7 @@
 
+
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,22 +25,17 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
-import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { VendorEarnings, Vendor } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { getVendorByUserId, createVendor } from '@/services/VendorService';
 
 const VendorDashboard = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { products, getVendorProducts } = useStore();
-  const { user } = useAuth();
-  
+  const { products, getVendorProducts, users } = useStore();
   const [vendorId, setVendorId] = useState<string>("");
   const [vendorName, setVendorName] = useState<string>("");
   const [stripeConnected, setStripeConnected] = useState<boolean>(false);
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [vendorData, setVendorData] = useState<Vendor | null>(null);
   
@@ -67,6 +63,7 @@ const VendorDashboard = () => {
     lastPayoutAmount: 1408.48
   });
   
+  // Mock payouts history - would be fetched from backend
   const [payoutsHistory, setPayoutsHistory] = useState([
     {
       id: "pout_1",
@@ -84,18 +81,22 @@ const VendorDashboard = () => {
     }
   ]);
   
+  // Get vendor products
   const [vendorProducts, setVendorProducts] = useState<any[]>([]);
   
   useEffect(() => {
-    if (user) {
-      if (user.profile?.role !== 'vendor') {
+    // Check if vendor is logged in
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      const user = JSON.parse(currentUser);
+      if (user.role !== 'vendor') {
         toast.error('You need to be logged in as a vendor to access this page');
         navigate('/login');
         return;
       }
       
       setVendorId(user.id);
-      setVendorName(user.profile.name || '');
+      setVendorName(user.name);
       
       const checkStripeAccount = async () => {
         try {
@@ -121,49 +122,31 @@ const VendorDashboard = () => {
       
       checkStripeAccount();
       
+      // Get vendor's products
       const products = getVendorProducts(user.id);
       setVendorProducts(products);
     } else {
       toast.error('Please login to continue');
       navigate('/login');
     }
-  }, [navigate, getVendorProducts, user]);
+  }, [navigate, getVendorProducts]);
   
-  const handleConnectStripe = async () => {
-    if (!user) {
-      toast.error('Please login to continue');
-      return;
-    }
-    
-    setIsConnecting(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('create-connect-account');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No onboarding URL returned');
-      }
-    } catch (error) {
-      console.error('Stripe connect error:', error);
-      toast.error('Failed to connect Stripe account. Please try again.');
-    } finally {
-      setIsConnecting(false);
-    }
+  // For demo purposes - would be real stripe connect in production
+  const handleConnectStripe = () => {
+    // In a real app this would redirect to Stripe Connect OAuth flow
+    toast.success("This would redirect to Stripe Connect onboarding in a real application");
+    setStripeConnected(true);
   };
   
-  const handleRequestPayout = async () => {
+  // Mock requesting a payout
+  const handleRequestPayout = () => {
     if (!stripeConnected) {
       toast.error("You need to connect your Stripe account first");
       return;
     }
     
     toast.success(`Payout of $${earnings.availableForPayout.toFixed(2)} requested successfully`);
+    // In a real app, this would trigger a backend process to create a payout
     setEarnings(prev => ({
       ...prev,
       availableForPayout: 0,
@@ -172,6 +155,7 @@ const VendorDashboard = () => {
     }));
   };
 
+  // Mock statistics
   const stats = {
     totalSales: earnings.totalEarnings,
     orders: 12,
@@ -371,13 +355,9 @@ const VendorDashboard = () => {
                       </AlertDescription>
                     </Alert>
                     
-                    <Button 
-                      onClick={handleConnectStripe} 
-                      className="w-full sm:w-auto mt-4"
-                      disabled={isConnecting}
-                    >
+                    <Button onClick={handleConnectStripe} className="w-full sm:w-auto mt-4">
                       <CreditCard className="mr-2 h-4 w-4" />
-                      {isConnecting ? 'Connecting...' : 'Connect Stripe Account'}
+                      Connect Stripe Account
                     </Button>
                   </CardContent>
                 </Card>

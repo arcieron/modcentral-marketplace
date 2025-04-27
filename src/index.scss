@@ -1,10 +1,71 @@
+/* --------------------------------------------------
+   Global font imports (hosted on Fontshare CDN) 
+--------------------------------------------------*/
 @import url('https://api.fontshare.com/v2/css?f[]=clash-display@600,700,500,400&display=swap');
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap');
 
+/* --------------------------------------------------
+   Locally-hosted fallback @font-face declarations  
+--------------------------------------------------*/
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../fonts/Satoshi/Satoshi-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../fonts/Satoshi/Satoshi-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../fonts/Satoshi/Satoshi-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ClashDisplay';
+  src: url('../fonts/ClashDisplay/ClashDisplay-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'ClashDisplay';
+  src: url('../fonts/ClashDisplay/ClashDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'ClashDisplay';
+  src: url('../fonts/ClashDisplay/ClashDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* --------------------------------------------------
+   Tailwind directives – processed by PostCSS
+--------------------------------------------------*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------
+   Small global utilities
+--------------------------------------------------*/
+html {
+  scroll-behavior: smooth;
+}
+
+.transparent-text {
+  mix-blend-mode: exclusion;
+}
+
+/* --------------------------------------------------
+   Design tokens in the :root scope (HSL values)  
+--------------------------------------------------*/
 @layer base {
   :root {
     --background: 0 0% 0%;
@@ -37,6 +98,7 @@
 
     --radius: 0.5rem;
 
+    /* sidebar */
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 50 100% 50%;
@@ -75,7 +137,8 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    
+
+    /* sidebar */
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 50 100% 50%;
@@ -87,6 +150,9 @@
   }
 }
 
+/* --------------------------------------------------
+   Base typography & element defaults with @apply
+--------------------------------------------------*/
 @layer base {
   * {
     @apply border-border;

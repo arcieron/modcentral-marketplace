@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useStore } from '@/context/StoreContext';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
+import Logo from '@/assets/images/logo.png';
+
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -55,7 +57,7 @@ const Navbar = () => {
             className="flex items-center"
           >
             <img 
-              src="/assets/modcentral-logo.png" 
+              src={Logo} 
               alt="ModCentral Logo" 
               className="h-10 md:h-12" 
             />
